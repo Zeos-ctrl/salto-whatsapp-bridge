@@ -13,7 +13,7 @@ const whatsappClient = new Client({
     }),
     puppeteer: {
         headless: true,
-        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+//        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -211,7 +211,7 @@ app.get('/list-chats', async (req, res) => {
     }
 });
 
-// List all broadcast lists
+// List all broadcast lists with detailed info
 app.get('/list-broadcasts', async (req, res) => {
     if (!isWhatsAppReady) {
         return res.status(503).json({ error: 'WhatsApp not connected' });
@@ -219,16 +219,49 @@ app.get('/list-broadcasts', async (req, res) => {
     
     try {
         const chats = await whatsappClient.getChats();
-        const broadcasts = chats.filter(chat => chat.isBroadcast);
+        
+        // Log all chats to see what we have
+        console.log('Total chats found:', chats.length);
+        
+        // Try multiple ways to identify broadcasts
+        const broadcasts = [];
+        const possibleBroadcasts = [];
+        
+        for (const chat of chats) {
+            console.log('Chat:', {
+                name: chat.name,
+                id: chat.id._serialized,
+                isGroup: chat.isGroup,
+                isBroadcast: chat.isBroadcast,
+                type: typeof chat.id.server
+            });
+            
+            // Explicit broadcast flag
+            if (chat.isBroadcast) {
+                broadcasts.push(chat);
+            }
+            
+            // Check if ID contains 'broadcast'
+            if (chat.id._serialized.includes('@broadcast')) {
+                possibleBroadcasts.push(chat);
+            }
+        }
         
         res.json({
-            broadcasts: broadcasts.map(b => ({ 
+            explicitBroadcasts: broadcasts.map(b => ({ 
                 name: b.name,
                 id: b.id._serialized,
                 recipients: b.participants ? b.participants.length : 0
-            }))
+            })),
+            idBasedBroadcasts: possibleBroadcasts.map(b => ({ 
+                name: b.name,
+                id: b.id._serialized,
+                recipients: b.participants ? b.participants.length : 0
+            })),
+            totalChats: chats.length
         });
     } catch (error) {
+        console.error('Error listing broadcasts:', error);
         res.status(500).json({ error: error.message });
     }
 });
