@@ -177,7 +177,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// List all chats (groups and individuals)
+// List all chats (groups, individuals, and broadcasts)
 app.get('/list-chats', async (req, res) => {
     if (!isWhatsAppReady) {
         return res.status(503).json({ error: 'WhatsApp not connected' });
@@ -186,9 +186,15 @@ app.get('/list-chats', async (req, res) => {
     try {
         const chats = await whatsappClient.getChats();
         const groups = chats.filter(chat => chat.isGroup);
-        const individuals = chats.filter(chat => !chat.isGroup);
+        const broadcasts = chats.filter(chat => chat.isBroadcast);
+        const individuals = chats.filter(chat => !chat.isGroup && !chat.isBroadcast);
         
         res.json({
+            broadcasts: broadcasts.map(b => ({ 
+                name: b.name,
+                id: b.id._serialized,
+                recipients: b.participants ? b.participants.length : 0
+            })),
             groups: groups.map(g => ({ 
                 name: g.name, 
                 id: g.id._serialized,
@@ -197,6 +203,28 @@ app.get('/list-chats', async (req, res) => {
             individuals: individuals.slice(0, 20).map(i => ({ 
                 name: i.name || 'Unknown', 
                 id: i.id._serialized 
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// List all broadcast lists
+app.get('/list-broadcasts', async (req, res) => {
+    if (!isWhatsAppReady) {
+        return res.status(503).json({ error: 'WhatsApp not connected' });
+    }
+    
+    try {
+        const chats = await whatsappClient.getChats();
+        const broadcasts = chats.filter(chat => chat.isBroadcast);
+        
+        res.json({
+            broadcasts: broadcasts.map(b => ({ 
+                name: b.name,
+                id: b.id._serialized,
+                recipients: b.participants ? b.participants.length : 0
             }))
         });
     } catch (error) {
