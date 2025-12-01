@@ -96,12 +96,31 @@ async function sendToAllRecipients(message) {
     for (const target of recipients) {
         try {
             const recipient = formatRecipient(target);
-            await whatsappClient.sendMessage(recipient, message);
+            
+            console.log(`Attempting to send to: ${recipient}`);
+            
+            // Try to get the chat first to verify it exists
+            const chat = await whatsappClient.getChatById(recipient);
+            console.log(`Chat found:`, {
+                name: chat.name,
+                id: chat.id._serialized,
+                isGroup: chat.isGroup,
+                isBroadcast: chat.isBroadcast,
+                canSend: chat.canSend !== false
+            });
+            
+            // Send the message
+            const sentMessage = await whatsappClient.sendMessage(recipient, message);
             
             console.log(`✓ Message sent successfully to: ${recipient}`);
+            console.log(`Message ID: ${sentMessage.id._serialized}`);
+            
             results.push({
                 recipient: recipient,
-                success: true
+                chatName: chat.name,
+                isBroadcast: chat.isBroadcast,
+                success: true,
+                messageId: sentMessage.id._serialized
             });
             
             // Small delay between messages to avoid rate limiting
@@ -109,6 +128,7 @@ async function sendToAllRecipients(message) {
             
         } catch (error) {
             console.error(`✗ Failed to send to ${target}:`, error.message);
+            console.error('Full error:', error);
             results.push({
                 recipient: target,
                 success: false,
