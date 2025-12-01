@@ -58,15 +58,65 @@ whatsappClient.on('disconnected', (reason) => {
 // Initialize WhatsApp
 whatsappClient.initialize();
 
-// Helper function to format recipient based on target type
-function formatRecipient(target, targetType) {
-    if (targetType === 'group') {
-        // Group IDs are already in the format: 123456789@g.us
-        return target;
-    } else {
-        // Individual number: ensure it has @c.us suffix
-        return target.includes('@') ? target : `${target}@c.us`;
+// Parse recipients from environment variable
+function getRecipients() {
+    const targetsString = process.env.WHATSAPP_TARGETS;
+    
+    if (!targetsString) {
+        throw new Error('WHATSAPP_TARGETS not configured in .env');
     }
+    
+    // Split by comma and clean up whitespace
+    const targets = targetsString.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    
+    if (targets.length === 0) {
+        throw new Error('No valid targets found in WHATSAPP_TARGETS');
+    }
+    
+    return targets;
+}
+
+// Helper function to format recipient
+function formatRecipient(target) {
+    // If it already contains @, assume it's properly formatted
+    if (target.includes('@')) {
+        return target;
+    }
+    
+    // Otherwise, assume it's a phone number and add @c.us
+    return `${target}@c.us`;
+}
+
+// Send message to all configured recipients
+async function sendToAllRecipients(message) {
+    const recipients = getRecipients();
+    const results = [];
+    
+    for (const target of recipients) {
+        try {
+            const recipient = formatRecipient(target);
+            await whatsappClient.sendMessage(recipient, message);
+            
+            console.log(`✓ Message sent successfully to: ${recipient}`);
+            results.push({
+                recipient: recipient,
+                success: true
+            });
+            
+            // Small delay between messages to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+        } catch (error) {
+            console.error(`✗ Failed to send to ${target}:`, error.message);
+            results.push({
+                recipient: target,
+                success: false,
+                error: error.message
+            });
+        }
+    }
+    
+    return results;
 }
 
 // Webhook endpoint to receive Salto alarms
@@ -85,37 +135,45 @@ app.post('/webhook/alarm', async (req, res) => {
         // Format message - adjust based on Salto's payload structure
         const message = formatAlarmMessage(alarmData);
         
-        // Get target from environment
-        const target = process.env.WHATSAPP_TARGET;
-        const targetType = process.env.WHATSAPP_TARGET_TYPE || 'individual';
+        // Send to all recipients
+        const results = await sendToAllRecipients(message);
         
-        if (!target) {
-            throw new Error('WHATSAPP_TARGET not configured');
-        }
+        // Count successes and failures
+        const successCount = results.filter(r => r.success).length;
+        const failureCount = results.filter(r => !r.success).length;
         
-        const recipient = formatRecipient(target, targetType);
+        console.log(`Message delivery: ${successCount} succeeded, ${failureCount} failed`);
         
-        await whatsappClient.sendMessage(recipient, message);
-        
-        console.log(`Message sent successfully to ${targetType}: ${recipient}`);
         res.json({ 
-            success: true, 
+            success: failureCount === 0,
             message: 'Alarm notification sent',
-            targetType: targetType
+            delivered: successCount,
+            failed: failureCount,
+            results: results
         });
         
     } catch (error) {
-        console.error('Error sending WhatsApp message:', error);
-        res.status(500).json({ error: 'Failed to send message', details: error.message });
+        console.error('Error sending WhatsApp messages:', error);
+        res.status(500).json({ 
+            error: 'Failed to send messages', 
+            details: error.message 
+        });
     }
 });
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+    let recipientCount = 0;
+    try {
+        recipientCount = getRecipients().length;
+    } catch (e) {
+        // Ignore error, will show 0 recipients
+    }
+    
     res.json({ 
         status: 'running',
         whatsappReady: isWhatsAppReady,
-        targetType: process.env.WHATSAPP_TARGET_TYPE || 'individual'
+        configuredRecipients: recipientCount
     });
 });
 
@@ -133,12 +191,37 @@ app.get('/list-chats', async (req, res) => {
         res.json({
             groups: groups.map(g => ({ 
                 name: g.name, 
-                id: g.id._serialized 
+                id: g.id._serialized,
+                participants: g.participants ? g.participants.length : 0
             })),
-            individuals: individuals.slice(0, 10).map(i => ({ 
+            individuals: individuals.slice(0, 20).map(i => ({ 
                 name: i.name || 'Unknown', 
                 id: i.id._serialized 
             }))
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Test endpoint to send a test message
+app.post('/test-message', async (req, res) => {
+    if (!isWhatsAppReady) {
+        return res.status(503).json({ error: 'WhatsApp not connected' });
+    }
+    
+    try {
+        const testMessage = req.body.message || '🧪 Test message from Salto-WhatsApp Bridge';
+        const results = await sendToAllRecipients(testMessage);
+        
+        const successCount = results.filter(r => r.success).length;
+        const failureCount = results.filter(r => !r.success).length;
+        
+        res.json({
+            success: failureCount === 0,
+            delivered: successCount,
+            failed: failureCount,
+            results: results
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -159,5 +242,10 @@ Details: ${alarmData.message || 'No details provided'}`;
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Salto-WhatsApp bridge running on port ${PORT}`);
-    console.log(`Target type: ${process.env.WHATSAPP_TARGET_TYPE || 'individual'}`);
+    try {
+        const recipients = getRecipients();
+        console.log(`Configured for ${recipients.length} recipient(s)`);
+    } catch (e) {
+        console.warn('Warning: No recipients configured in .env');
+    }
 });
