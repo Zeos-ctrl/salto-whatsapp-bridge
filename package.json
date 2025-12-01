@@ -1,19 +1,39 @@
 {
   "name": "salto-whatsapp-bridge",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Bridge to forward Salto Space alarms to WhatsApp",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "build": "cd installer && build-installer.bat"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "keywords": [
+    "salto",
+    "whatsapp",
+    "webhook",
+    "alarm",
+    "notification"
+  ],
+  "author": "Connor Bryan",
+  "license": "MIT",
   "dependencies": {
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "express": "^4.18.2",
+    "whatsapp-web.js": "^1.23.0",
     "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js"
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "scripts": "src/server.js",
+    "assets": [
+      "src/public/**/*",
+      "node_modules/**/*"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ]
   }
 }

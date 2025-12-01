@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salto-WhatsApp Bridge - Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #555;
+        }
+        
+        .status-indicator.connected {
+            background: #4caf50;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        .status-indicator.disconnected {
+            background: #f44336;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .card {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid #3d3d3d;
+        }
+        
+        h2 {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1976d2;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #388e3c;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #d32f2f;
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            font-size: 14px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+        
+        .target-list {
+            list-style: none;
+        }
+        
+        .target-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: #1a1a1a;
+        }
+        
+        .target-id {
+            font-family: monospace;
+            color: #9e9e9e;
+        }
+        
+        .chat-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            background: #1a1a1a;
+        }
+        
+        .chat-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-list::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        .chat-list::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        
+        .chat-list::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+        
+        .chat-item {
+            padding: 10px;
+            border-bottom: 1px solid #3d3d3d;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .chat-item:hover {
+            background: #2d2d2d;
+        }
+        
+        .chat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .chat-name {
+            font-weight: 500;
+            color: #ffffff;
+        }
+        
+        .chat-id {
+            font-size: 12px;
+            color: #9e9e9e;
+            font-family: monospace;
+        }
+        
+        .chat-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+        
+        .chat-type.group {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196f3;
+        }
+        
+        .chat-type.individual {
+            background: rgba(156, 39, 176, 0.2);
+            color: #ab47bc;
+        }
+        
+        .qr-code {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .qr-code img {
+            max-width: 300px;
+            border: 2px solid #3d3d3d;
+            border-radius: 8px;
+            background: white;
+            padding: 10px;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border: 1px solid;
+        }
+        
+        .alert-success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #81c784;
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+        
+        .alert-error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #e57373;
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+        
+        .alert-info {
+            background: rgba(33, 150, 243, 0.2);
+            color: #64b5f6;
+            border-color: rgba(33, 150, 243, 0.5);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #9e9e9e;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: #2d2d2d;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            min-width: 250px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.success {
+            border-left: 4px solid #4caf50;
+        }
+
+        .toast.error {
+            border-left: 4px solid #f44336;
+        }
+
+        .toast.info {
+            border-left: 4px solid #2196f3;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .toast.removing {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+    </style> 
+</head>
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="container">
+        <div class="header">
+            <h1>Salto-WhatsApp Bridge</h1>
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-indicator" id="whatsappStatus"></div>
+                    <span id="whatsappStatusText">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <strong>Targets:</strong>
+                    <span id="targetCount">0</span>
+                </div>
+                <div>
+                    <button class="btn btn-danger" onclick="logout()" id="logoutBtn" style="display: none;">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="qrCodeSection" class="card" style="display: none;">
+            <h2>WhatsApp Authentication Required</h2>
+            <div class="alert alert-info">
+                <strong>Scan this QR code with WhatsApp:</strong><br>
+                Open WhatsApp → Settings → Linked Devices → Link a Device
+            </div>
+            <div class="qr-code" id="qrCodeContainer"></div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Configured Targets</h2>
+                <div class="input-group">
+                    <input type="text" id="newTarget" placeholder="Enter phone number or group ID">
+                    <button class="btn btn-primary" onclick="addTarget()">Add Target</button>
+                </div>
+                <ul class="target-list" id="targetList">
+                    <li class="loading">Loading targets...</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>Available Chats</h2>
+                <button class="btn btn-primary" onclick="loadChats()" style="margin-bottom: 15px;">
+                    Refresh Chats
+                </button>
+                <div id="chatListContainer">
+                    <p class="loading">Click "Refresh Chats" to load available groups and contacts</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Test Message</h2>
+            <div class="input-group">
+                <input type="text" id="testMessage" placeholder="Enter test message" value="🧪 Test message from Salto Bridge">
+                <button class="btn btn-success" onclick="sendTestMessage()" id="testBtn">Send Test</button>
+            </div>
+            <div id="testResult"></div>
+        </div>
+    </div>
+
+    <script>
+        let statusInterval;
+
+        // Load status on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStatus();
+            loadTargets();
+            statusInterval = setInterval(loadStatus, 5000); // Check every 5 seconds
+        });
+
+        function showToast(type, message) {
+            const container = document.getElementById('toastContainer');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+            toast.innerHTML = `<strong>${icon}</strong> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                // Update WhatsApp status
+                const statusIndicator = document.getElementById('whatsappStatus');
+                const statusText = document.getElementById('whatsappStatusText');
+                const logoutBtn = document.getElementById('logoutBtn');
+                
+                if (data.whatsappConnected) {
+                    statusIndicator.className = 'status-indicator connected';
+                    statusText.textContent = 'WhatsApp Connected';
+                    document.getElementById('qrCodeSection').style.display = 'none';
+                    logoutBtn.style.display = 'block';
+                } else {
+                    statusIndicator.className = 'status-indicator disconnected';
+                    statusText.textContent = 'WhatsApp Disconnected';
+                    logoutBtn.style.display = 'none';
+                    
+                    if (data.needsQRCode) {
+                        loadQRCode();
+                    }
+                }
+
+                // Update target count
+                document.getElementById('targetCount').textContent = data.configuredTargets;
+
+            } catch (error) {
+                console.error('Error loading status:', error);
+            }
+        }
+
+        async function loadQRCode() {
+            try {
+                const response = await fetch('/api/qr-code');
+                const data = await response.json();
+
+                if (data.qrCode) {
+                    const qrSection = document.getElementById('qrCodeSection');
+                    const qrContainer = document.getElementById('qrCodeContainer');
+                    
+                    qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.qrCode)}" alt="QR Code">`;
+                    qrSection.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading QR code:', error);
+            }
+        }
+
+        // Load targets from server
+        async function loadTargets() {
+            const targetList = document.getElementById('targetList');
+            targetList.innerHTML = '<li class="loading">Loading targets...</li>';
+            
+            try {
+                const response = await fetch('/api/targets');
+                const data = await response.json();
+                
+                if (data.targets.length === 0) {
+                    targetList.innerHTML = '<li style="padding: 12px; color: #9e9e9e;">No targets configured</li>';
+                } else {
+                    targetList.innerHTML = data.targets.map(target => `
+                        <li class="target-item">
+                            <span class="target-id">${target}</span>
+                            <button class="btn btn-danger" onclick="removeTarget('${target}')">Remove</button>
+                        </li>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading targets:', error);
+                targetList.innerHTML = '<li style="padding: 12px; color: #f44336;">Error loading targets</li>';
+            }
+        }
+
+        async function addTarget(targetId) {
+            const input = document.getElementById('newTarget');
+            const target = targetId || input.value.trim();
+
+            if (!target) {
+                showToast('error', 'Please enter a target');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/targets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    input.value = '';
+                    
+                    // Reload targets
+                    await loadTargets();
+                    await loadStatus();
+                    
+                    showToast('success', 'Target added successfully');
+                } else {
+                    showToast('error', data.error || 'Failed to add target');
+                }
+            } catch (error) {
+                console.error('Error adding target:', error);
+                showToast('error', 'Failed to add target');
+            }
+        }
+
+        async function removeTarget(target) {
+            if (!confirm(`Remove target: ${target}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/targets/${encodeURIComponent(target)}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    await loadTargets();
+                    await loadStatus();
+                    
+                    showToast('success', 'Target removed successfully');
+                } else {
+                    showToast('error', 'Failed to remove target');
+                }
+            } catch (error) {
+                console.error('Error removing target:', error);
+                showToast('error', 'Failed to remove target');
+            }
+        }
+
+        async function loadChats() {
+            const container = document.getElementById('chatListContainer');
+            container.innerHTML = '<p class="loading">Loading chats...</p>';
+
+            try {
+                const response = await fetch('/api/chats');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    container.innerHTML = `<p class="alert alert-error">${data.error}</p>`;
+                    return;
+                }
+
+                let html = '<div class="chat-list">';
+                
+                // Groups
+                if (data.groups.length > 0) {
+                    data.groups.forEach(group => {
+                        html += `
+                            <div class="chat-item" onclick="addTarget('${group.id}')">
+                                <div class="chat-name">
+                                    ${group.name}
+                                    <span class="chat-type group">Group (${group.participants})</span>
+                                </div>
+                                <div class="chat-id">${group.id}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Individuals
+                if (data.individuals.length > 0) {
+                    data.individuals.forEach(individual => {
+                        html += `
+                            <div class="chat-item" onclick="addTarget('${individual.id}')">
+                                <div class="chat-name">
+                                    ${individual.name}
+                                    <span class="chat-type individual">Individual</span>
+                                </div>
+                                <div class="chat-id">${individual.id}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                html += '</div>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading chats:', error);
+                container.innerHTML = '<p class="alert alert-error">Failed to load chats</p>';
+            }
+        }
+
+        async function sendTestMessage() {
+            const messageInput = document.getElementById('testMessage');
+            const testBtn = document.getElementById('testBtn');
+            const resultDiv = document.getElementById('testResult');
+
+            const message = messageInput.value.trim();
+            if (!message) {
+                showToast('error', 'Please enter a test message');
+                return;
+            }
+
+            testBtn.disabled = true;
+            testBtn.textContent = 'Sending...';
+            resultDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/test-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            ✓ Test message sent successfully!<br>
+                            Delivered: ${data.delivered} | Failed: ${data.failed}
+                        </div>
+                    `;
+                    showToast('success', 'Test message sent!');
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-error">
+                            ✗ ${data.error || 'Failed to send test message'}<br>
+                            ${data.delivered ? `Delivered: ${data.delivered} | Failed: ${data.failed}` : ''}
+                        </div>
+                    `;
+                    showToast('error', 'Failed to send test message');
+                }
+            } catch (error) {
+                console.error('Error sending test message:', error);
+                resultDiv.innerHTML = '<div class="alert alert-error">Failed to send test message</div>';
+                showToast('error', 'Network error');
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = 'Send Test';
+            }
+        }
+
+        async function logout() {
+            if (!confirm('Are you sure you want to logout? You will need to scan the QR code again to reconnect.')) {
+                return;
+            }
+            
+            const logoutBtn = document.getElementById('logoutBtn');
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Logging out...';
+            
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast('success', 'Logged out successfully! Reloading...');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showToast('error', `Logout failed: ${data.error}`);
+                    logoutBtn.disabled = false;
+                    logoutBtn.textContent = 'Logout';
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                showToast('error', 'Failed to logout');
+                logoutBtn.disabled = false;
+                logoutBtn.textContent = 'Logout';
+            }
+        }
+
+        // Allow Enter key to add target
+        document.getElementById('newTarget').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTarget();
+            }
+        });
+
+        // Allow Enter key to send test message
+        document.getElementById('testMessage').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendTestMessage();
+            }
+        });
+    </script>
+</body>
+</html>

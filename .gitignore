@@ -1,3 +1,26 @@
-whatsapp-session/*
+# Dependencies
+node_modules/
 
-node_modules/*
+# Environment
+.env
+
+# WhatsApp session
+whatsapp-session/
+
+# Build output
+dist/
+installer/output/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
