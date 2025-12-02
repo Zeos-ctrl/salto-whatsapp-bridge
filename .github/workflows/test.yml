@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Check for syntax errors
+      run: node -c src/server.js
+    
+    - name: Verify required files exist
+      run: |
+        test -f src/server.js || exit 1
+        test -f src/public/index.html || exit 1
+        test -f package.json || exit 1
+        test -f installer/build-linux.sh || exit 1
+        echo "All required files present"
+    
+    - name: Check build script is executable
+      run: test -x installer/build-linux.sh

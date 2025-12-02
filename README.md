@@ -219,3 +219,9 @@ If Salto is on a different machine, allow port 3000:
 - Only allow necessary IPs to access port 3000
 - Keep Node.js and dependencies updated: `npm update`
 - Regularly check Windows Event Viewer for issues
+
+
+
+## Download
+
+[Latest Release](https://github.com/Zeos-ctrl/salto-whatsapp-bridge/releases/latest)

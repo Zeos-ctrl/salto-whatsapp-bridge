@@ -12,6 +12,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Check for required tools
+if ! command -v zip &> /dev/null; then
+    echo -e "${RED}Error: 'zip' command not found${NC}"
+    echo "Install with: sudo apt install zip"
+    exit 1
+fi
+
 echo -e "${YELLOW}Step 1: Installing dependencies...${NC}"
 npm install
 
@@ -36,24 +43,53 @@ fi
 
 echo ""
 echo -e "${YELLOW}Step 4: Creating package directory...${NC}"
+rm -rf dist/package
 mkdir -p dist/package/salto-whatsapp-bridge
 PACKAGE_DIR="dist/package/salto-whatsapp-bridge"
 
 # Copy necessary files
+echo "  - Copying executable..."
 cp dist/salto-whatsapp-bridge.exe "$PACKAGE_DIR/"
+
+echo "  - Copying public directory..."
 cp -r src/public "$PACKAGE_DIR/"
+
+echo "  - Copying package files..."
 cp package.json "$PACKAGE_DIR/"
-cp .env.example "$PACKAGE_DIR/"
-cp installer/README.md "$PACKAGE_DIR/"
-cp installer/LICENSE.txt "$PACKAGE_DIR/"
+
+# Copy .env.example (check if it exists first)
+if [ -f ".env.example" ]; then
+    cp .env.example "$PACKAGE_DIR/"
+else
+    echo -e "${YELLOW}Warning: .env.example not found, creating default${NC}"
+    cat > "$PACKAGE_DIR/.env.example" << 'ENVEOF'
+PORT=3000
+WHATSAPP_TARGETS=
+ENVEOF
+fi
+
+# Copy installer files (check if they exist)
+if [ -f "installer/README.md" ]; then
+    cp installer/README.md "$PACKAGE_DIR/"
+else
+    echo -e "${YELLOW}Warning: installer/README.md not found${NC}"
+fi
+
+if [ -f "installer/LICENSE.txt" ]; then
+    cp installer/LICENSE.txt "$PACKAGE_DIR/"
+else
+    echo -e "${YELLOW}Warning: installer/LICENSE.txt not found${NC}"
+fi
 
 # Copy service installation scripts
-cp installer/install-service.bat "$PACKAGE_DIR/"
-cp installer/install-service-script.js "$PACKAGE_DIR/"
-cp installer/uninstall-service.bat "$PACKAGE_DIR/"
-cp installer/uninstall-service-script.js "$PACKAGE_DIR/"
+echo "  - Copying service scripts..."
+cp installer/install-service.bat "$PACKAGE_DIR/" 2>/dev/null || echo "    Warning: install-service.bat not found"
+cp installer/install-service-script.js "$PACKAGE_DIR/" 2>/dev/null || echo "    Warning: install-service-script.js not found"
+cp installer/uninstall-service.bat "$PACKAGE_DIR/" 2>/dev/null || echo "    Warning: uninstall-service.bat not found"
+cp installer/uninstall-service-script.js "$PACKAGE_DIR/" 2>/dev/null || echo "    Warning: uninstall-service-script.js not found"
 
 # Copy node_modules (needed for dependencies)
+echo ""
 echo -e "${YELLOW}Step 5: Copying node_modules...${NC}"
 cp -r node_modules "$PACKAGE_DIR/"
 
@@ -75,6 +111,10 @@ Installation Steps:
 6. Configure Salto Space to send webhooks to: http://YOUR_SERVER_IP:3000/webhook/alarm
 
 The service will now run automatically on startup.
+
+Manual Start (without service):
+1. Open Command Prompt in this directory
+2. Run: node salto-whatsapp-bridge.exe
 
 Uninstall:
 Right-click uninstall-service.bat and select "Run as Administrator"
