@@ -15,7 +15,6 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-LicenseFile=LICENSE.txt
 OutputDir=output
 OutputBaseFilename=SaltoWhatsAppBridge-Setup-{#MyAppVersion}
 Compression=lzma
@@ -32,37 +31,47 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "service"; Description: "Install as Windows Service (runs automatically on startup)"; GroupDescription: "Service Options:"; Flags: checkedonce
 
 [Files]
+; Main executable
 Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+
+; Source files needed for service
+Source: "..\src\server.js"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\public\*"; DestDir: "{app}\public"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Dependencies
 Source: "..\node_modules\*"; DestDir: "{app}\node_modules"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\package.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\src\server.js"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\.env.example"; DestDir: "{app}"; Flags: ignoreversion
-Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion isreadme
+
+; Configuration
+Source: "..\..env.example"; DestDir: "{app}"; DestName: ".env.example"; Flags: ignoreversion; AfterInstall: CreateEnvFile
+
+; Service scripts
 Source: "install-service.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "install-service-script.js"; DestDir: "{app}"; Flags: ignoreversion
 Source: "uninstall-service.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "uninstall-service-script.js"; DestDir: "{app}"; Flags: ignoreversion
 
+; Documentation
+Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion isreadme; AfterInstall: CreateReadme
+Source: "LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion; AfterInstall: CreateLicense
+
 [Dirs]
 Name: "{app}\whatsapp-session"; Permissions: users-full
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "http://localhost:3000"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName} Configuration"; Filename: "http://localhost:3000"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "http://localhost:3000"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "http://localhost:3000"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\install-service.bat"; Parameters: ""; WorkingDir: "{app}"; Flags: runhidden; Tasks: service; Description: "Installing Windows Service"
+Filename: "{app}\install-service.bat"; Parameters: ""; WorkingDir: "{app}"; Flags: runhidden waituntilterminated; Tasks: service; Description: "Installing Windows Service"
 Filename: "http://localhost:3000"; Flags: shellexec postinstall skipifsilent; Description: "Open Salto-WhatsApp Bridge Configuration"
 
 [UninstallRun]
-Filename: "{app}\uninstall-service.bat"; Parameters: ""; WorkingDir: "{app}"; Flags: runhidden
+Filename: "{app}\uninstall-service.bat"; Parameters: ""; WorkingDir: "{app}"; Flags: runhidden waituntilterminated
 
 [Code]
 function InitializeSetup(): Boolean;
-var
-  ResultCode: Integer;
 begin
   // Check if Node.js is installed
   if not RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\Node.js') and
@@ -73,4 +82,37 @@ begin
   end
   else
     Result := True;
+end;
+
+procedure CreateEnvFile();
+var
+  EnvPath: String;
+begin
+  EnvPath := ExpandConstant('{app}\.env');
+  if not FileExists(EnvPath) then
+  begin
+    SaveStringToFile(EnvPath, 'PORT=3000' + #13#10 + 'WHATSAPP_TARGETS=' + #13#10, False);
+  end;
+end;
+
+procedure CreateReadme();
+var
+  ReadmePath: String;
+begin
+  ReadmePath := ExpandConstant('{app}\README.md');
+  if not FileExists(ReadmePath) then
+  begin
+    SaveStringToFile(ReadmePath, '# Salto-WhatsApp Bridge' + #13#10 + 'See INSTALL.txt for instructions.' + #13#10, False);
+  end;
+end;
+
+procedure CreateLicense();
+var
+  LicensePath: String;
+begin
+  LicensePath := ExpandConstant('{app}\LICENSE.txt');
+  if not FileExists(LicensePath) then
+  begin
+    SaveStringToFile(LicensePath, 'MIT License' + #13#10, False);
+  end;
 end;
