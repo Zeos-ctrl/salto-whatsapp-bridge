@@ -17,16 +17,28 @@ if %ERRORLEVEL% NEQ 0 (
 REM Get directories
 set INSTALLER_DIR=%~dp0
 set ROOT_DIR=%INSTALLER_DIR%..
-set NSSM_PATH=C:\nssm\win64\nssm.exe
 
-echo Installation Directory: %ROOT_DIR%
+REM Check for NSSM in local directory first, then C:\nssm
+if exist "%ROOT_DIR%\nssm\win64\nssm.exe" (
+    set NSSM_PATH=%ROOT_DIR%\nssm\win64\nssm.exe
+    echo Using bundled NSSM
+) else if exist "C:\nssm\win64\nssm.exe" (
+    set NSSM_PATH=C:\nssm\win64\nssm.exe
+    echo Using system NSSM from C:\nssm
+) else (
+    echo [ERROR] NSSM not found!
+    echo.
+    pause
+    exit /b 1
+)
+
+echo NSSM Location: %NSSM_PATH%
 echo.
 
 REM Check if Node.js is installed
 where node >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Node.js is not installed or not in PATH
-    echo Download from: https://nodejs.org/
     echo.
     pause
     exit /b 1
@@ -36,21 +48,6 @@ echo [1/5] Node.js found
 for /f "tokens=*" %%i in ('where node') do set NODE_PATH=%%i
 echo       Location: %NODE_PATH%
 echo.
-
-REM Check if NSSM is installed
-if not exist "%NSSM_PATH%" (
-    echo [ERROR] NSSM not found at: %NSSM_PATH%
-    echo.
-    echo Please download NSSM from: https://nssm.cc/download
-    echo Extract it to C:\nssm\
-    echo.
-    echo Expected structure:
-    echo   C:\nssm\win64\nssm.exe
-    echo   C:\nssm\win32\nssm.exe
-    echo.
-    pause
-    exit /b 1
-)
 
 echo [2/5] NSSM found
 echo.
@@ -82,30 +79,20 @@ REM Check if service already exists
 sc query "Salto WhatsApp Bridge" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo [WARNING] Service already exists!
-    echo Would you like to reinstall? (Y/N)
-    choice /C YN /N
-    if errorlevel 2 (
-        echo Installation cancelled.
-        pause
-        exit /b 0
-    )
-    
-    echo Stopping existing service...
+    echo Stopping and removing existing service...
     "%NSSM_PATH%" stop "Salto WhatsApp Bridge" >nul 2>&1
-    timeout /t 2 >nul
-    
-    echo Removing existing service...
+    timeout /t 2 /nobreak >nul
     "%NSSM_PATH%" remove "Salto WhatsApp Bridge" confirm >nul 2>&1
-    timeout /t 2 >nul
+    timeout /t 2 /nobreak >nul
     echo.
 )
 
 REM Create logs directory
-if not exist "%ROOT_DIR%\logs" mkdir "%ROOT_DIR%\logs"
+if not exist "logs" mkdir logs
 
 REM Install service
 echo [5/5] Installing Windows Service...
-"%NSSM_PATH%" install "Salto WhatsApp Bridge" "%NODE_PATH%" "src\server.js"
+"%NSSM_PATH%" install "Salto WhatsApp Bridge" "%NODE_PATH%" "src\server.js" >nul 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to install service
@@ -114,25 +101,19 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Configure service
-echo       Configuring service...
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppDirectory "%ROOT_DIR%"
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" DisplayName "Salto WhatsApp Bridge"
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" Description "Forwards Salto Space alarms to WhatsApp"
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" Start SERVICE_AUTO_START
-
-REM Set up logging
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppStdout "%ROOT_DIR%\logs\service-output.log"
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppStderr "%ROOT_DIR%\logs\service-error.log"
-
-REM Set log rotation (10MB files, keep 5 rotations)
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppRotateFiles 1
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppRotateOnline 1
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppRotateBytes 10485760
-"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppRotateSeconds 86400
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppDirectory "%ROOT_DIR%" >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" DisplayName "Salto WhatsApp Bridge" >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" Description "Forwards Salto Space alarms to WhatsApp" >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" Start SERVICE_AUTO_START >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppStdout "%ROOT_DIR%\logs\service-output.log" >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppStderr "%ROOT_DIR%\logs\service-error.log" >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppRotateFiles 1 >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppRotateOnline 1 >nul
+"%NSSM_PATH%" set "Salto WhatsApp Bridge" AppRotateBytes 10485760 >nul
 
 REM Start service
 echo       Starting service...
-"%NSSM_PATH%" start "Salto WhatsApp Bridge"
+"%NSSM_PATH%" start "Salto WhatsApp Bridge" >nul 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to start service
@@ -141,11 +122,11 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-REM Wait a moment for service to start
-timeout /t 3 >nul
+REM Wait for service to start
+timeout /t 3 /nobreak >nul
 
-REM Check service status
-"%NSSM_PATH%" status "Salto WhatsApp Bridge" | find "SERVICE_RUNNING" >nul
+REM Check if running
+sc query "Salto WhatsApp Bridge" | find "RUNNING" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ================================================
@@ -160,20 +141,13 @@ if %ERRORLEVEL% EQU 0 (
     echo 1. Open http://localhost:3000 in your browser
     echo 2. Scan the QR code with WhatsApp
     echo 3. Add target groups/contacts
-    echo 4. Configure Salto webhook
-    echo.
-    echo Service Management:
-    echo - View in Services: services.msc
-    echo - Stop:    nssm stop "Salto WhatsApp Bridge"
-    echo - Start:   nssm start "Salto WhatsApp Bridge"
-    echo - Restart: nssm restart "Salto WhatsApp Bridge"
-    echo - Remove:  Run uninstall-service.bat
+    echo 4. Configure Salto Space webhook
     echo.
 ) else (
     echo.
     echo [WARNING] Service installed but not running
     echo Check logs in: %ROOT_DIR%\logs
-    echo Try: nssm start "Salto WhatsApp Bridge"
+    echo Check Event Viewer for details
     echo.
 )
 
