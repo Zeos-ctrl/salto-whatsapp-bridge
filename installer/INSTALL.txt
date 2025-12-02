@@ -1,0 +1,59 @@
+INSTALLATION INSTRUCTIONS
+=========================
+
+Prerequisites:
+--------------
+1. Windows Server 2016 or later
+2. Node.js v18 or higher (https://nodejs.org/)
+3. NSSM - Non-Sucking Service Manager (https://nssm.cc/download)
+
+IMPORTANT: You must install NSSM before running the service installer!
+
+Quick Start:
+------------
+1. Install Node.js from https://nodejs.org/
+2. Download NSSM from https://nssm.cc/download
+3. Extract NSSM to C:\nssm\
+4. Right-click install-service.bat → "Run as Administrator"
+5. Open http://localhost:3000 in your browser
+6. Scan QR code with WhatsApp
+7. Add target groups/contacts
+
+Configure Salto Space:
+----------------------
+Webhook URL: http://YOUR_SERVER_IP:3000/webhook/alarm
+Method: POST
+Content-Type: application/json
+
+Service Management:
+-------------------
+View Service:  services.msc (look for "Salto WhatsApp Bridge")
+Stop Service:  C:\nssm\win64\nssm.exe stop "Salto WhatsApp Bridge"
+Start Service: C:\nssm\win64\nssm.exe start "Salto WhatsApp Bridge"
+Restart:       C:\nssm\win64\nssm.exe restart "Salto WhatsApp Bridge"
+Remove:        Run uninstall-service.bat as Administrator
+
+Logs Location:
+--------------
+Output: logs\service-output.log
+Errors: logs\service-error.log
+
+Troubleshooting:
+----------------
+If service won't start:
+1. Check logs in the logs\ folder
+2. Try running manually: node src\server.js
+3. Check Event Viewer (eventvwr)
+
+If NSSM is not installed:
+See INSTALL_REQUIREMENTS.txt for instructions
+
+Manual Operation (without service):
+------------------------------------
+If you don't want to run as a service:
+1. Open Command Prompt in application folder
+2. Run: node src\server.js
+3. Keep window open
+4. Access at: http://localhost:3000
+
+For more help, see README.md

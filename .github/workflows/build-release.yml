@@ -32,7 +32,16 @@ jobs:
       run: npm install -g pkg
     
     - name: Install zip utility
-      run: sudo apt-get install -y zip
+      run: sudo apt-get install -y zip wget unzip
+    
+    - name: Download NSSM
+      run: |
+        echo "Downloading NSSM..."
+        wget https://nssm.cc/release/nssm-2.24.zip -O nssm.zip
+        unzip nssm.zip
+        mkdir -p nssm-dist
+        mv nssm-2.24 nssm-dist/nssm
+        echo "NSSM downloaded and extracted"
     
     - name: Create missing files
       run: |
@@ -77,14 +86,60 @@ jobs:
         # Salto-WhatsApp Bridge
         
         See INSTALL.txt for installation instructions.
+        Requires NSSM - see INSTALL_REQUIREMENTS.txt
         EOF
         fi
+        
+        # Create INSTALL_REQUIREMENTS.txt
+        cat > installer/INSTALL_REQUIREMENTS.txt << 'EOF'
+        NSSM INSTALLATION GUIDE
+        =======================
+        
+        NSSM is included in this package at: nssm\win64\nssm.exe
+        
+        The installer will use NSSM automatically from this location.
+        
+        If you prefer to install NSSM globally:
+        1. Copy the 'nssm' folder to C:\nssm
+        2. The installer will work from either location
+        
+        Manual Installation:
+        If the installer fails, you can install the service manually:
+        
+        1. Open Command Prompt as Administrator
+        2. Run:
+           nssm\win64\nssm.exe install "Salto WhatsApp Bridge" "C:\Program Files\nodejs\node.exe" "src\server.js"
+           nssm\win64\nssm.exe set "Salto WhatsApp Bridge" AppDirectory "%CD%"
+           nssm\win64\nssm.exe start "Salto WhatsApp Bridge"
+        
+        For more information: https://nssm.cc/
+        EOF
     
     - name: Make build script executable
       run: chmod +x installer/build-linux.sh
     
+    - name: Update build script to include NSSM
+      run: |
+        # Update the build script to copy NSSM
+        sed -i '/# Copy service installation scripts/a \
+        \
+        # Copy NSSM\
+        echo "  - Copying NSSM..."\
+        cp -r nssm-dist/nssm "$PACKAGE_DIR/"' installer/build-linux.sh
+    
     - name: Build Windows package
       run: ./installer/build-linux.sh
+    
+    - name: Verify NSSM is in package
+      run: |
+        cd dist/package/salto-whatsapp-bridge
+        if [ -f "nssm/win64/nssm.exe" ]; then
+          echo "✓ NSSM included in package"
+          ls -lh nssm/win64/nssm.exe
+        else
+          echo "✗ NSSM not found in package!"
+          exit 1
+        fi
     
     - name: Get version
       id: version
@@ -113,19 +168,30 @@ jobs:
           ### Installation
           1. Download the ZIP file below
           2. Extract to a permanent location on Windows Server
-          3. Run `install-service.bat` as Administrator
-          4. Open http://localhost:3000 to configure
-          
+          3. **NSSM is included** - no separate download needed!
+          4. Run `install-service.bat` as Administrator
+          5. Open http://localhost:3000 to configure
+
           ### What's Included
           - WhatsApp Web integration
-          - Web-based configuration interface
+          - Web-based dark mode configuration interface
+          - **NSSM service manager** (bundled)
           - Windows Service installer
           - Multi-target support (groups and individuals)
+          - Automatic service restart on failure
+          - Log rotation
           
           ### Requirements
           - Windows Server 2016 or later
-          - Node.js v18 or higher
+          - Node.js v18 or higher (download from nodejs.org)
           
+          ### Quick Start
+
+          # Extract ZIP, then:
+          1. Right-click install-service.bat → Run as Administrator
+          2. Open http://localhost:3000
+          3. Scan QR code with WhatsApp
+          4. Add your groups/contacts
           See README.md in the package for full documentation.
         draft: false
         prerelease: false

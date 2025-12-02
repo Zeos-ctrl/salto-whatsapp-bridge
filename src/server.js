@@ -7,7 +7,10 @@ const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use(express.static('public')); // Serve static files
+// Serve static files - handle both development and production paths
+const publicPath = require('path').join(__dirname, 'public');
+app.use(express.static(publicPath));
+console.log('Serving static files from:', publicPath);
 
 // Initialize WhatsApp client with session persistence
 const whatsappClient = new Client({
@@ -75,6 +78,9 @@ function getTargets() {
 // Helper function to save targets to .env
 function saveTargets(targets) {
     const envPath = path.join(__dirname, '..', '.env');
+    
+    console.log('Saving to .env at:', envPath);
+    
     let envContent = '';
     
     // Read existing .env
@@ -374,6 +380,19 @@ app.post('/webhook/alarm', async (req, res) => {
             details: error.message 
         });
     }
+});
+
+// Debug endpoint to check paths
+app.get('/debug/paths', (req, res) => {
+    res.json({
+        __dirname: __dirname,
+        cwd: process.cwd(),
+        publicPath: path.join(__dirname, 'public'),
+        publicExists: fs.existsSync(path.join(__dirname, 'public')),
+        filesInPublic: fs.existsSync(path.join(__dirname, 'public')) 
+            ? fs.readdirSync(path.join(__dirname, 'public')) 
+            : 'Directory not found'
+    });
 });
 
 // Format the alarm message

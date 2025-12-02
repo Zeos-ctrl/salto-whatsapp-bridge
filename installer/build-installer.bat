@@ -58,7 +58,26 @@ if not exist "%INNO_PATH%" (
 )
 
 echo.
-echo Step 5: Building installer with Inno Setup...
+echo Step 5: Checking for NSSM requirement...
+if exist "%PKG%\install-service.bat" (
+    echo   - Creating NSSM installation guide...
+    (
+    echo NSSM REQUIRED FOR SERVICE INSTALLATION
+    echo ======================================
+    echo.
+    echo This package requires NSSM to install as a Windows Service.
+    echo.
+    echo Download NSSM from: https://nssm.cc/download
+    echo Extract to: C:\nssm\
+    echo.
+    echo See INSTALL_REQUIREMENTS.txt for detailed instructions.
+    ) > "%PKG%\NSSM_REQUIRED.txt"
+    
+    copy installer\INSTALL_REQUIREMENTS.txt "%PKG%\" >nul
+)
+
+echo.
+echo Step 6: Building installer with Inno Setup...
 cd installer
 "%INNO_PATH%" installer.iss
 
@@ -72,7 +91,7 @@ cd ..
 
 :CREATE_ZIP
 echo.
-echo Step 6: Creating ZIP package...
+echo Step 7: Creating ZIP package...
 if exist "dist\package" rmdir /s /q dist\package
 mkdir dist\package\salto-whatsapp-bridge
 
