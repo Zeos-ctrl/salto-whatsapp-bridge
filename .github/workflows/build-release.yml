@@ -11,6 +11,10 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-windows-package:
     runs-on: ubuntu-latest
@@ -168,14 +172,11 @@ jobs:
           ### Installation
           1. Download the ZIP file below
           2. Extract to a permanent location on Windows Server
-          3. **NSSM is included** - no separate download needed!
           4. Run `install-service.bat` as Administrator
           5. Open http://localhost:3000 to configure
 
           ### What's Included
           - WhatsApp Web integration
-          - Web-based dark mode configuration interface
-          - **NSSM service manager** (bundled)
           - Windows Service installer
           - Multi-target support (groups and individuals)
           - Automatic service restart on failure
